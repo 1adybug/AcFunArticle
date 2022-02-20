@@ -1,10 +1,12 @@
 import { Navigation } from "react-native-navigation"
-import Home from "./pages/Home"
 import Article from "./pages/Article"
 import Comment from "./pages/Comment"
 import SubComment from "./pages/SubComment"
 import Test from "./pages/Test"
 import ArticleList from "./pages/ArticleList"
+import Setting from "./pages/Setting"
+import Login from "./pages/Login"
+import Loading from "./pages/Loading"
 import axios from "axios"
 import { indexList, storage } from "./utils"
 
@@ -14,6 +16,9 @@ Navigation.registerComponent("Comment", () => Comment)
 Navigation.registerComponent("SubComment", () => SubComment)
 Navigation.registerComponent("ArticleList", () => ArticleList)
 Navigation.registerComponent("Test", () => Test)
+Navigation.registerComponent("Setting", () => Setting)
+Navigation.registerComponent("Login", () => Login)
+Navigation.registerComponent("Loading", () => Loading)
 
 Navigation.setDefaultOptions({
     statusBar: {
@@ -22,7 +27,6 @@ Navigation.setDefaultOptions({
     topBar: {
         title: {
             color: "#FFFFFF",
-            text: "AcFun 文章区",
             alignment: "center"
         },
         backButton: {
@@ -48,6 +52,14 @@ Navigation.setDefaultOptions({
 
 Navigation.events().registerAppLaunchedListener(async () => {
 
+    Navigation.setRoot({
+        root: {
+            component: {
+                name: "Loading"
+            }
+        }
+    })
+
     axios({
         url: "https://www.acfun.cn/rest/pc-direct/emotion/getUserEmotion",
         method: "POST"
@@ -72,7 +84,6 @@ Navigation.events().registerAppLaunchedListener(async () => {
             data: emotionList
         })
     })
-
 
     let currentIndex
     try {
@@ -119,34 +130,27 @@ Navigation.events().registerAppLaunchedListener(async () => {
         storage.save({ key: "currentRankRangeIndex", data: 0 })
     }
 
-
-    Navigation.setRoot({
-        root: {
-            stack: {
-                id: "HomeStack",
-                children: [
-                    {
-                        component: {
-                            name: "ArticleList",
-                            passProps: {
-                                currentIndex,
-                                currentChildIndexList,
-                                currentOrderIndex,
-                                currentRangeIndex,
-                                currentRankRangeIndex
+    setTimeout(() => {
+        Navigation.setRoot({
+            root: {
+                stack: {
+                    id: "HomeStack",
+                    children: [
+                        {
+                            component: {
+                                name: "ArticleList",
+                                passProps: {
+                                    currentIndex,
+                                    currentChildIndexList,
+                                    currentOrderIndex,
+                                    currentRangeIndex,
+                                    currentRankRangeIndex
+                                }
                             }
                         }
-                    }
-                ],
-                options: {
-                    topBar: {
-                        rightButtons: {
-                            icon: require("./images/setting_line.png"),
-                            id: "Test"
-                        }
-                    }
+                    ]
                 }
             }
-        }
-    })
+        }) 
+    }, 1000)
 })

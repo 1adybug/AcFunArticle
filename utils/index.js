@@ -547,11 +547,13 @@ export function commentToJSX(comment) {
                 res.JSXList.push(<View key={index}><Image source={{ uri: this.emotionList[emotionId] || `https://cdn.aixifan.com/dotnet/20130418/umeditor/dialogs/emotion/images/ac/${emotionId}.gif` }} style={{ width: 42 * this.o, height: 42 * this.o, top: 4 * this.o }} /></View>)
             }
             if (tag === "at") {
+                console.log(start, index)
                 start = start + comment.slice(start).indexOf("[/at]") + 5
                 const _ = comment.slice(index, start)
-                const userId = _.match(/id=\d+\s/)[0]
+                console.log(_)
+                const userId = _.match(/id=\d+[\s\]]/)[0]
                 const str = _.slice(_.indexOf("]") + 1, _.lastIndexOf("["))
-                res.JSXList.push(<Text key={index} articleId={articleId} style={{ color: "blue" }}>{str}</Text>)
+                res.JSXList.push(<Text key={index} userId={parseInt(userId)} style={{ color: "blue" }}>{str}</Text>)
             }
             if (tag === "color") {
                 start = start + comment.slice(start).indexOf("[/color]") + 8
@@ -586,6 +588,8 @@ export async function getImage() {
 
     const { fileName, base64 } = readRes.assets[0]
 
+    const { cookie } = await getLoginUserInfo()
+
     const { data: { info: { token } } } = await axios({
         url: "https://www.acfun.cn/rest/pc-direct/image/upload/getToken",
         method: "post",
@@ -595,7 +599,7 @@ export async function getImage() {
             "accept-language": "zh-CN,zh;q=0.9",
             "cache-control": "no-cache",
             "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
-            "cookie": "_did=web_44698192604F95D8; lsv_js_player_v2_main=89abb7; ac_username=1adybug; ac_userimg=https%3A%2F%2Fimgs.aixifan.com%2Fo_1dfnc7hnv1su41ql71bm11n6v13eu7.gif; acPostHint=bdd05fcf0c0b67b2b90726ae403f37a1d6e5; acPasstoken=ChVpbmZyYS5hY2Z1bi5wYXNzdG9rZW4SYFzpWo0bmWsor7nXXcxUGs0Tz6M7JWzZigfAVplp26WdV2UMH1zZ-Xx153ny8gAytLZyX7iMMFcA0t0EqE3YSwqTvs19qPWHAkRHW61PqYeZDv16oHyHxmT2bMjWOxZRNxoSl7K-jF1M_UqZpKqngXbxAOo1IiAKMz8Zjwhw2L_t0S0wamcJeoDMGwdlUqb99JEOLD_YqCgFMAE; auth_key=981615; _did=web_44698192604F95D8; safety_id=AAK3GkZgNUQvV8Yj_bVFB2Eb; csrfToken=znNwTQxGiZKclkgsqykZpqf9; webp_supported=%7B%22lossy%22%3Atrue%2C%22lossless%22%3Atrue%2C%22alpha%22%3Atrue%2C%22animation%22%3Atrue%7D; cur_req_id=21968662139359CF_self_8f31d24e4fcff9be08bf8b9687465d32; cur_group_id=21968662139359CF_self_8f31d24e4fcff9be08bf8b9687465d32_0",
+            "cookie": cookie,
             "dnt": 1,
             "origin": "https://www.acfun.cn",
             "pragma": "no-cache",
@@ -688,7 +692,7 @@ export async function getImage() {
             "accept-encoding": "gzip, deflate, br",
             "accept-language": "zh-CN,zh;q=0.9",
             "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
-            "cookie": "_did=web_44698192604F95D8; lsv_js_player_v2_main=89abb7; ac_username=1adybug; ac_userimg=https%3A%2F%2Fimgs.aixifan.com%2Fo_1dfnc7hnv1su41ql71bm11n6v13eu7.gif; acPostHint=bdd05fcf0c0b67b2b90726ae403f37a1d6e5; acPasstoken=ChVpbmZyYS5hY2Z1bi5wYXNzdG9rZW4SYFzpWo0bmWsor7nXXcxUGs0Tz6M7JWzZigfAVplp26WdV2UMH1zZ-Xx153ny8gAytLZyX7iMMFcA0t0EqE3YSwqTvs19qPWHAkRHW61PqYeZDv16oHyHxmT2bMjWOxZRNxoSl7K-jF1M_UqZpKqngXbxAOo1IiAKMz8Zjwhw2L_t0S0wamcJeoDMGwdlUqb99JEOLD_YqCgFMAE; auth_key=981615; _did=web_44698192604F95D8; safety_id=AAK3GkZgNUQvV8Yj_bVFB2Eb; csrfToken=znNwTQxGiZKclkgsqykZpqf9; webp_supported=%7B%22lossy%22%3Atrue%2C%22lossless%22%3Atrue%2C%22alpha%22%3Atrue%2C%22animation%22%3Atrue%7D; cur_req_id=21968662139359CF_self_8f31d24e4fcff9be08bf8b9687465d32; cur_group_id=21968662139359CF_self_8f31d24e4fcff9be08bf8b9687465d32_0",
+            "cookie": cookie,
             "dnt": 1,
             "origin": "https://www.acfun.cn",
             "referer": "https://www.acfun.cn/a/ac33577229",
@@ -706,8 +710,12 @@ export async function getImage() {
     return res.data.url
 }
 
-export async function sendCommentToAcFun(content, articleId, cookie, replyToCommentId = "") {
-    console.log(replyToCommentId)
+export async function sendCommentToAcFun(content, articleId, replyToCommentId = "") {
+
+    const { cookie } = await getLoginUserInfo()
+
+    console.log("这是获得图片的cookie", cookie)
+
     const res = await axios({
         url: "https://www.acfun.cn/rest/pc-direct/comment/add",
         method: "POST",
@@ -717,7 +725,7 @@ export async function sendCommentToAcFun(content, articleId, cookie, replyToComm
             "accept-language": "zh-CN,zh;q=0.9",
             "cache-control": "no-cache",
             "content-type": "application/x-www-form-urlencoded",
-            "cookie": "_did=web_44698192604F95D8; lsv_js_player_v2_main=89abb7; ac_username=1adybug; ac_userimg=https%3A%2F%2Fimgs.aixifan.com%2Fo_1dfnc7hnv1su41ql71bm11n6v13eu7.gif; acPostHint=bdd05fcf0c0b67b2b90726ae403f37a1d6e5; acPasstoken=ChVpbmZyYS5hY2Z1bi5wYXNzdG9rZW4SYFzpWo0bmWsor7nXXcxUGs0Tz6M7JWzZigfAVplp26WdV2UMH1zZ-Xx153ny8gAytLZyX7iMMFcA0t0EqE3YSwqTvs19qPWHAkRHW61PqYeZDv16oHyHxmT2bMjWOxZRNxoSl7K-jF1M_UqZpKqngXbxAOo1IiAKMz8Zjwhw2L_t0S0wamcJeoDMGwdlUqb99JEOLD_YqCgFMAE; auth_key=981615; _did=web_44698192604F95D8; safety_id=AAK3GkZgNUQvV8Yj_bVFB2Eb; csrfToken=znNwTQxGiZKclkgsqykZpqf9; webp_supported=%7B%22lossy%22%3Atrue%2C%22lossless%22%3Atrue%2C%22alpha%22%3Atrue%2C%22animation%22%3Atrue%7D; cur_req_id=21968662139359CF_self_8f31d24e4fcff9be08bf8b9687465d32; cur_group_id=21968662139359CF_self_8f31d24e4fcff9be08bf8b9687465d32_0",
+            "cookie": cookie,
             "dnt": 1,
             "origin": "https://www.acfun.cn",
             "pragma": "no-cache",
@@ -733,4 +741,21 @@ export async function sendCommentToAcFun(content, articleId, cookie, replyToComm
         data: `sourceId=${articleId}&sourceType=3&content=${encodeURIComponent(content)}&replyToCommentId=${replyToCommentId}`
     })
     return res.status
+}
+
+export async function getLoginUserInfo() {
+    try {
+        const cookie = await storage.load({ key: "cookie" })
+        const a = cookie.indexOf("ac_username=")
+        const b = cookie.slice(a + 12)
+        const c = b.indexOf("; ")
+        const userName = (decodeURIComponent(b.slice(0, c))).replace(/&#[\d\w]+;/ig, i => String.fromCharCode(i.slice(2, -1) * 1))
+        const d = cookie.indexOf("ac_userimg=")
+        const e = cookie.slice(d + 11)
+        const f = e.indexOf("; ")
+        const avatarUrl = decodeURIComponent(e.slice(0, f))
+        return { cookie, userName, avatarUrl }
+    } catch (error) {
+        return null
+    }
 }

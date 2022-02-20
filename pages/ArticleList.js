@@ -76,6 +76,30 @@ class ArticleFloor extends Component {
 
 export default class ArticleList extends Component {
 
+    constructor(props) {
+        super(props)
+        Navigation.events().bindComponent(this)
+    }
+
+    navigationButtonPressed({ buttonId }) {
+        Navigation.push(this.props.componentId, {
+            component: {
+                name: "Setting"
+            }
+        })
+    }
+
+    static options = {
+        topBar: {
+            rightButtons: {
+                icon: require("../images/setting_line.png")
+            },
+            title: {
+                text: "AcFun 文章区",
+            }
+        }
+    }
+
     indexList = indexList
 
     cursorList = [
@@ -286,10 +310,6 @@ export default class ArticleList extends Component {
     onSwipeRight = () => this.state.currentIndex >= 1 ? this.switchToIndex(this.state.currentIndex - 1) : null
 
     onSwipeLeft = () => this.state.currentIndex <= 6 ? this.switchToIndex(this.state.currentIndex + 1) : null
-
-    navigationButtonPressed({ buttonId }) {
-        console.log(buttonId)
-    }
 
     refresh = {
         index: 0,

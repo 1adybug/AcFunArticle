@@ -1,8 +1,8 @@
 import React, { Component } from "react"
 import { View, Text, Image, FlatList, Dimensions, Pressable } from "react-native"
 import axios from "axios"
-import { storage, commentToJSX } from "../utils"
-import { SendComment } from "./Comment"
+import { storage, commentToJSX, getLoginUserInfo } from "../utils"
+import { SendComment, MessageBox } from "./Component"
 import { Navigation } from "react-native-navigation"
 
 class SubFloor extends Component {
@@ -25,12 +25,12 @@ class SubFloor extends Component {
                     <Image source={require("../images/like.png")} style={{ width: 24 * o, height: 24 * o, marginLeft: 8 * o }} />
                 </View>
                 <View style={{ flexDirection: "row" }}>
-                    <Text style={{ fontSize: 22 * o, color: "black", fontWeight: "900", flex: 0 }}>{userName}</Text>
+                    <Text style={{ fontSize: 22 * o, color: "black", fontWeight: "900", flex: 0 }}>{userName} </Text>
                     {
                         replyToUserName ?
                             <>
                                 <Text style={{ fontSize: 22 * o, color: "black", flex: 0, color: "#999999" }}>  回复  </Text>
-                                <Text style={{ fontSize: 22 * o, color: "black", fontWeight: "900", flex: 0 }}>{replyToUserName}</Text>
+                                <Text style={{ fontSize: 22 * o, color: "black", fontWeight: "900", flex: 0 }}>{replyToUserName} </Text>
                             </> : <></>
                     }
                 </View>
@@ -99,7 +99,7 @@ export default class SubComment extends Component {
 
         if (this.nextPage > this.totalPage) {
             this.refreshing = false
-            alert("没有更多评论了哦")
+            this.showMessage("没有更多评论了哦")
             return
         }
 
@@ -108,7 +108,7 @@ export default class SubComment extends Component {
             method: "GET"
         })
 
-        
+
         this.nextPage++
 
         this.totalPage = totalPage
@@ -150,12 +150,23 @@ export default class SubComment extends Component {
 
     renderSubFloor = e => <SubFloor onPress={() => this.showReplyToSomeone(e.item.commentId, e.item.userName)} key={e.item.floorId} {...e.item} index={e.index} />
 
-    showReplyToSomeone = (replyToCommentId = this.props.rootCommentId, replyToUserName = "楼主") => {
-        this.setState({
-            showReply: true,
-            replyToCommentId,
-            replyToUserName,
-        })
+    showReplyToSomeone = async (replyToCommentId = this.props.rootCommentId, replyToUserName = "楼主") => {
+
+        const info = await getLoginUserInfo()
+
+        if (info) {
+            this.setState({
+                showReply: true,
+                replyToCommentId,
+                replyToUserName,
+            })
+        } else {
+            Navigation.push(this.props.componentId, {
+                component: {
+                    name: "Login"
+                }
+            })
+        }
     }
 
     cancelReplyToSomeone = () => {
@@ -188,11 +199,33 @@ export default class SubComment extends Component {
         })
     }
 
+    showMessage = data => {
+        if (this.timer) clearTimeout(this.timer)
+        this.setState({
+            message: data
+        })
+        this.timer = setTimeout(() => {
+            this.setState({
+                message: null
+            })
+        }, 1500)
+    }
+
+
+    newComment = () => {
+        this.nextPage = 1
+        this.totalPage = 1
+        this.setState({
+            subCommentList: []
+        })
+        this.addSubComment()
+    }
+
     render() {
 
-        const { renderSubFloor, o, cancelReplyToSomeone, addSubComment } = this
+        const { renderSubFloor, o, cancelReplyToSomeone, addSubComment, showMessage, newComment } = this
 
-        const { subCommentList, showReply, replyToCommentId, replyToUserName } = this.state
+        const { subCommentList, showReply, replyToCommentId, replyToUserName, message } = this.state
 
         return (
             <View style={{ flex: 1, backgroundColor: "#F8F8F8" }}>
@@ -206,8 +239,9 @@ export default class SubComment extends Component {
                     onEndReached={addSubComment}
                 />
                 {
-                    showReply ? <SendComment articleId={this.props.articleId} replyToCommentId={replyToCommentId} replyToUserName={replyToUserName} cancelReplyToSomeone={cancelReplyToSomeone} /> : null
+                    showReply ? <SendComment articleId={this.props.articleId} replyToCommentId={replyToCommentId} replyToUserName={replyToUserName} cancelReplyToSomeone={cancelReplyToSomeone} showMessage={showMessage} newComment={newComment} /> : null
                 }
+                <MessageBox message={message} />
             </View>
         )
     }
