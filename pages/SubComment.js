@@ -3,6 +3,7 @@ import { View, Text, Image, FlatList, Dimensions, Pressable } from "react-native
 import axios from "axios"
 import { storage, commentToJSX, getLoginUserInfo } from "../utils"
 import { SendComment, MessageBox } from "./Component"
+import ImageView from "react-native-image-viewing"
 import { Navigation } from "react-native-navigation"
 
 class SubFloor extends Component {
@@ -13,24 +14,26 @@ class SubFloor extends Component {
 
         const { o } = this
 
-        const { userName, content, deviceModel, userId, timestamp, postDate, replyToUserName, avatarUrl, commentId, imageList, JSXList, likeCount, showReplyUserName, index, onPress } = this.props
+        const { userName, content, deviceModel, userId, timestamp, postDate, replyToUserName, avatarUrl, commentId, imageList, JSXList, likeCount, showReplyUserName, index, onPress, showImageViewer } = this.props
+
+        const _avatarUrl = avatarUrl.replace("http:", "https:")
 
         return (
             <Pressable onPress={onPress} style={{ paddingLeft: 96 * o, paddingTop: 23 * o, paddingRight: 22 * o, paddingBottom: index === 0 ? 20 * o : 0, backgroundColor: index === 0 ? "white" : "transparent" }}>
                 <View style={{ position: "absolute", width: 54 * o, height: 54 * o, borderRadius: 27 * o, top: 22 * o, left: 22 * o, overflow: "hidden" }}>
-                    <Image source={{ uri: avatarUrl }} style={{ width: 54 * o, height: 54 * o }} />
+                    <Image source={{ uri: _avatarUrl }} style={{ width: 54 * o, height: 54 * o }} />
                 </View>
                 <View style={{ position: "absolute", right: 22 * o, top: 26 * o, flexDirection: "row", alignItems: "center" }}>
                     <Text style={{ fontSize: 22 * o, letterSpacing: 1 * o, color: "#A4A4A4" }}>{likeCount}</Text>
                     <Image source={require("../images/like.png")} style={{ width: 24 * o, height: 24 * o, marginLeft: 8 * o }} />
                 </View>
                 <View style={{ flexDirection: "row" }}>
-                    <Text style={{ fontSize: 22 * o, color: "black", fontWeight: "900", flex: 0 }}>{userName} </Text>
+                    <Text style={{ fontSize: 22 * o, color: "black", fontWeight: "700", flex: 0 }}>{userName} </Text>
                     {
                         replyToUserName ?
                             <>
                                 <Text style={{ fontSize: 22 * o, color: "black", flex: 0, color: "#999999" }}>  回复  </Text>
-                                <Text style={{ fontSize: 22 * o, color: "black", fontWeight: "900", flex: 0 }}>{replyToUserName} </Text>
+                                <Text style={{ fontSize: 22 * o, color: "black", fontWeight: "700", flex: 0 }}>{replyToUserName} </Text>
                             </> : <></>
                     }
                 </View>
@@ -42,9 +45,9 @@ class SubFloor extends Component {
                         </Text>
                     </View>
                     {
-                        imageList[0] ? <View style={{ marginTop: 16 * o, height: 196 * o, flexDirection: "row", alignItems: "center" }} ><Image source={{ uri: imageList[0] }} style={{ width: 196 * o, height: 196 * o }} resizeMode="center" />{
+                        imageList[0] ? <Pressable onPress={() => showImageViewer(imageList.map(value => ({ uri: value })))}  style={{ marginTop: 16 * o, height: 196 * o, flexDirection: "row", alignItems: "center" }} ><Image source={{ uri: imageList[0] }} style={{ width: 196 * o, height: 196 * o }} resizeMode="center" />{
                             imageList[1] ? <Text>1 / {imageList.length}</Text> : <></>
-                        }</View> : <></>
+                        }</Pressable> : <></>
                     }
                 </View>
                 {
@@ -83,6 +86,9 @@ export default class SubComment extends Component {
         showReply: false,
         replyToCommentId: "",
         replyToUserName: null,
+        message: null,
+        imageViewerList: [],
+        imageViewerVisible: false
     }
 
     async componentDidMount() {
@@ -148,7 +154,7 @@ export default class SubComment extends Component {
         return res
     }
 
-    renderSubFloor = e => <SubFloor onPress={() => this.showReplyToSomeone(e.item.commentId, e.item.userName)} key={e.item.floorId} {...e.item} index={e.index} />
+    renderSubFloor = e => <SubFloor onPress={() => this.showReplyToSomeone(e.item.commentId, e.item.userName)} key={e.item.floorId} {...e.item} index={e.index} showImageViewer={this.showImageViewer} />
 
     showReplyToSomeone = async (replyToCommentId = this.props.rootCommentId, replyToUserName = "楼主") => {
 
@@ -221,11 +227,16 @@ export default class SubComment extends Component {
         this.addSubComment()
     }
 
+    showImageViewer = list => this.setState({
+        imageViewerList: list,
+        imageViewerVisible: true
+    })
+
     render() {
 
         const { renderSubFloor, o, cancelReplyToSomeone, addSubComment, showMessage, newComment } = this
 
-        const { subCommentList, showReply, replyToCommentId, replyToUserName, message } = this.state
+        const { subCommentList, showReply, replyToCommentId, replyToUserName, message, imageViewerList, imageViewerVisible } = this.state
 
         return (
             <View style={{ flex: 1, backgroundColor: "#F8F8F8" }}>
@@ -241,6 +252,14 @@ export default class SubComment extends Component {
                 {
                     showReply ? <SendComment articleId={this.props.articleId} replyToCommentId={replyToCommentId} replyToUserName={replyToUserName} cancelReplyToSomeone={cancelReplyToSomeone} showMessage={showMessage} newComment={newComment} /> : null
                 }
+                <ImageView
+                    images={imageViewerList}
+                    imageIndex={0}
+                    visible={imageViewerVisible}
+                    presentationStyle="overFullScreen"
+                    onRequestClose={() => { this.setState({ imageViewerVisible: false }) }}
+                    swipeToCloseEnabled={Platform.OS === "ios"}
+                />
                 <MessageBox message={message} />
             </View>
         )

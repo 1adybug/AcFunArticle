@@ -1,4 +1,4 @@
-package com.nav;
+package com.acfun.article;
 
 import com.reactnativenavigation.NavigationActivity;
 

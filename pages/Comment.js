@@ -1,8 +1,9 @@
 import React, { Component, createRef } from "react"
-import { View, Text, Image, FlatList, Dimensions, Pressable, Linking, TextInput } from "react-native"
+import { View, Text, Image, FlatList, Dimensions, Pressable, Linking, TextInput, Platform } from "react-native"
 import axios from "axios"
 import { storage, getImage, sendCommentToAcFun, commentToJSX, getLoginUserInfo } from "../utils"
 import { SendComment, MessageBox } from "./Component"
+import ImageView from "react-native-image-viewing"
 import { Navigation } from "react-native-navigation"
 
 class Floor extends Component {
@@ -13,18 +14,20 @@ class Floor extends Component {
 
         const { o } = this
 
-        const { userName, content, deviceModel, userId, timestamp, postDate, replyToUserName, avatarUrl, commentId, JSXList, imageList, likeCount, subCommentCount, showReplyUserName, onPress } = this.props
+        const { userName, content, deviceModel, userId, timestamp, postDate, replyToUserName, avatarUrl, commentId, JSXList, imageList, likeCount, subCommentCount, showReplyUserName, onPress, showImageViewer } = this.props
+
+        const _avatarUrl = avatarUrl.replace("http:", "https:")
 
         return (
             <Pressable onPress={onPress} style={{ paddingLeft: 96 * o, paddingTop: 23 * o, paddingRight: 22 * o }}>
                 <View style={{ position: "absolute", width: 54 * o, height: 54 * o, borderRadius: 27 * o, top: 22 * o, left: 22 * o, overflow: "hidden" }}>
-                    <Image source={{ uri: avatarUrl }} style={{ width: 54 * o, height: 54 * o }} />
+                    <Image source={{ uri: _avatarUrl }} style={{ width: 54 * o, height: 54 * o }} />
                 </View>
                 <View style={{ position: "absolute", right: 22 * o, top: 26 * o, flexDirection: "row", alignItems: "center" }}>
                     <Text style={{ fontSize: 22 * o, letterSpacing: 1 * o, color: "#A4A4A4" }}>{likeCount}</Text>
                     <Image source={require("../images/like.png")} style={{ width: 24 * o, height: 24 * o, marginLeft: 8 * o }} />
                 </View>
-                <Text style={{ fontSize: 22 * o, color: "black", fontWeight: "900" }}>{userName} </Text>
+                <Text style={{ fontSize: 22 * o, color: "black", fontWeight: "700" }}>{userName} </Text>
                 <Text style={{ fontSize: 18 * o, color: "#A4A4A4" }}>{postDate}  {deviceModel}</Text>
                 <View style={{ marginTop: 8 * o }}>
                     <View>
@@ -33,9 +36,9 @@ class Floor extends Component {
                         </Text>
                     </View>
                     {
-                        imageList[0] ? <View style={{ marginTop: 16 * o, height: 196 * o, flexDirection: "row", alignItems: "center" }} ><Image source={{ uri: imageList[0] }} style={{ width: 196 * o, height: 196 * o }} resizeMode="center" />{
+                        imageList[0] ? <Pressable onPress={() => showImageViewer(imageList.map(value => ({ uri: value })))} style={{ marginTop: 16 * o, height: 196 * o, flexDirection: "row", alignItems: "center" }} ><Image source={{ uri: imageList[0] }} style={{ width: 196 * o, height: 196 * o }} resizeMode="center" />{
                             imageList[1] ? <Text>1 / {imageList.length}</Text> : <></>
-                        }</View> : <></>
+                        }</Pressable> : <></>
                     }
                 </View>
                 {
@@ -84,7 +87,9 @@ export default class Comment extends Component {
         showReply: false,
         replyToCommentId: "",
         replyToUserName: null,
-        message: null
+        message: null,
+        imageViewerList: [],
+        imageViewerVisible: false
     }
 
     async componentDidMount() {
@@ -170,7 +175,7 @@ export default class Comment extends Component {
         })
     }
 
-    renderFloor = e => <Floor onPress={() => this.showReplyToSomeone(e.item.commentId, e.item.userName)} key={e.item.floorId} {...e.item} goToSubComment={this.goToSubComment} />
+    renderFloor = e => <Floor onPress={() => this.showReplyToSomeone(e.item.commentId, e.item.userName)} key={e.item.floorId} {...e.item} goToSubComment={this.goToSubComment} showImageViewer={this.showImageViewer} />
 
     decode = str => str.replace(/&#[\d\w]+;/ig, i => String.fromCharCode(i.slice(2, -1) * 1))
 
@@ -245,11 +250,17 @@ export default class Comment extends Component {
         this.addComment()
     }
 
+
+    showImageViewer = list => this.setState({
+        imageViewerList: list,
+        imageViewerVisible: true
+    })
+
     render() {
 
-        const { renderFloor, o, cancelReplyToSomeone, addComment, showMessage, newComment } = this
+        const { renderFloor, o, cancelReplyToSomeone, addComment, showMessage, newComment, showImageViewer } = this
 
-        const { commentList, showReply, replyToCommentId, replyToUserName, message } = this.state
+        const { commentList, showReply, replyToCommentId, replyToUserName, message, imageViewerList, imageViewerVisible } = this.state
 
         return (
             <View style={{ flex: 1 }}>
@@ -265,6 +276,14 @@ export default class Comment extends Component {
                 {
                     showReply ? <SendComment articleId={this.props.articleId} replyToCommentId={replyToCommentId} replyToUserName={replyToUserName} cancelReplyToSomeone={cancelReplyToSomeone} showMessage={showMessage} newComment={newComment} /> : null
                 }
+                <ImageView
+                    images={imageViewerList}
+                    imageIndex={0}
+                    visible={imageViewerVisible}
+                    presentationStyle="overFullScreen"
+                    onRequestClose={() => { this.setState({ imageViewerVisible: false }) }}
+                    swipeToCloseEnabled={Platform.OS === "ios"}
+                />
                 <MessageBox message={message} />
             </View>
         )

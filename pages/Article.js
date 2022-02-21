@@ -1,5 +1,5 @@
 import React, { useEffect, Component } from "react"
-import { View, Text, Dimensions } from "react-native"
+import { View, Text, Dimensions, Image, Pressable } from "react-native"
 import WebView from "react-native-webview"
 import axios from "axios"
 import { getAll, replaceAll } from "../utils"
@@ -63,6 +63,26 @@ export default class Article extends Component {
         })
     }
 
+    onSwipeLeft = () => {
+        Navigation.push(this.props.componentId, {
+            component: {
+                name: "Comment",
+                passProps: {
+                    articleId: this.props.articleId
+                },
+                options: {
+                    topBar: {
+                        title: {
+                            color: "#FFFFFF",
+                            text: `${this.commentCount}条评论`,
+                            alignment: "center"
+                        }
+                    }
+                }
+            }
+        })
+    }
+
     render() {
         const { width, height } = Dimensions.get("window")
         const o = width / 640
@@ -70,6 +90,7 @@ export default class Article extends Component {
         return (
             <View
                 style={{ flex: 1 }}
+            // onSwipeLeft={this.onSwipeLeft}
             >
                 <WebView
                     source={{
@@ -138,7 +159,10 @@ export default class Article extends Component {
                     showsHorizontalScrollIndicator={false}
                     mixedContentMode="always"
                 />
-            </View>
+                <Pressable onPress={this.onSwipeLeft} style={{ position: "absolute", width: 80 * o, height: 80 * o, backgroundColor: "#FD4C5D", alignItems: "center", justifyContent: "center", borderRadius: 40 * o, overflow: "hidden", right: 40 * o, bottom: 40 * o, opacity: 0.8 }}>
+                    <Image source={require("../images/comment_line.png")} style={{ width: 60 * o, height: 60 * o }} />
+                </Pressable>
+            </View >
         )
     }
 }

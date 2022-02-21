@@ -1,6 +1,5 @@
 import React, { Component, createRef } from "react"
 import { View, Text, Dimensions, Image, FlatList, ScrollView, Pressable, Button } from "react-native"
-import GestureRecognizer from "react-native-swipe-gestures"
 import { Navigation } from "react-native-navigation"
 import axios from "axios"
 import moment from "moment"
@@ -62,7 +61,7 @@ class ArticleFloor extends Component {
                     <Image source={require("../images/comment.png")} style={{ width: 18 * o, height: 18 * o }} />
                     <Text style={{ fontSize: 16 * o }}>{formatCommentCount}</Text>
                 </View>
-                <Text style={{ fontSize: 26 * o, color: "#333333", fontWeight: "900" }}>{title}</Text>
+                <Text style={{ fontSize: 26 * o, color: "#333333", fontWeight: "700" }}>{title}</Text>
                 <View style={{ flexDirection: "row", alignItems: "center", height: 62 * o }}>
                     <View style={{ width: 30 * o, height: 30 * o, borderRadius: 15 * o, marginRight: 10 * o, overflow: "hidden" }} >
                         <Image source={{ uri: headUrl }} style={{ width: 30 * o, height: 30 * o }} />
@@ -214,6 +213,7 @@ export default class ArticleList extends Component {
         const { currentIndex, currentChildIndexList, currentOrderIndex, currentRangeIndex } = this.state
         if (currentIndex === 0) {
             if (currentChildIndexList[0][0] === childIndex) return
+            cursorList[0] = "first_page"
             listScroll.current.scrollToOffset({ offset: 0, animated: false })
             const _ = [...currentChildIndexList]
             _[0][0] = childIndex
@@ -223,6 +223,8 @@ export default class ArticleList extends Component {
             })
             return
         }
+
+        cursorList[currentIndex] = "first_page"
 
         listScroll.current.scrollToOffset({ offset: 0, animated: false })
 
@@ -249,6 +251,7 @@ export default class ArticleList extends Component {
         const { currentIndex, currentChildIndexList, currentOrderIndex, currentRangeIndex, currentRankRangeIndex } = this.state
         if (currentIndex === 0) {
             if (currentRankRangeIndex === rangeIndex) return
+            cursorList[currentIndex] = "first_page"
             listScroll.current.scrollToOffset({ offset: 0, animated: false })
             const _ = await getRankList(indexList[0].childList[currentChildIndexList[0][0]].subChannelId, indexList[0].rangeList[rangeIndex].data)
             this.setState({
@@ -259,6 +262,7 @@ export default class ArticleList extends Component {
         }
 
         if (currentRangeIndex === rangeIndex) return
+        cursorList[currentIndex] = "first_page"
         listScroll.current.scrollToOffset({ offset: 0, animated: false })
         this.setState({
             currentRangeIndex: rangeIndex,
@@ -270,6 +274,7 @@ export default class ArticleList extends Component {
         if (this.state.currentOrderIndex === orderIndex) return
         this.listScroll.current.scrollToOffset({ offset: 0, animated: false })
         const { currentIndex } = this.state
+        this.cursorList[currentIndex] = "first_page"
         const _ = await this.getArticleList(this.cursorList[currentIndex], this.indexList[currentIndex].orderList[orderIndex].data, this.indexList[currentIndex].rangeList[this.state.currentRangeIndex].data, this.state.currentChildIndexList[currentIndex].map(value => this.indexList[currentIndex].childList[value].realmId), currentIndex)
         this.setState({
             articleList: _,
@@ -294,6 +299,7 @@ export default class ArticleList extends Component {
     }
 
     getArticleList = async (_cursor, order, range, realmIdList, index) => {
+        if (!realmIdList[0]) return []
         try {
             const { data: { data, cursor } } = await axios({
                 url: "https://www.acfun.cn/rest/pc-direct/article/feed",
@@ -325,9 +331,24 @@ export default class ArticleList extends Component {
         this.switchToIndex(this.state.currentIndex, true, false)
     }
 
+    startPoint = 0
+
+    endPoint = 0
+
+    width = Dimensions.get("window").width
+
+    touchStart = e => this.startPoint = e.nativeEvent.pageX
+
+    touchEnd = e => {
+        const { width } = this
+        this.endPoint = e.nativeEvent.pageX
+        if (this.endPoint - this.startPoint >= width / 3) this.onSwipeRight()
+        if (this.startPoint - this.endPoint >= width / 3) this.onSwipeLeft()
+    }
+
     render() {
 
-        const { indexList, o, topScroll, secScroll, listScroll, renderArticleFloor, switchToIndex, switchChildIndex, switchRangeIndex, switchOrderIndex, onSwipeLeft, onSwipeRight, addArticle } = this
+        const { indexList, o, topScroll, secScroll, listScroll, renderArticleFloor, switchToIndex, switchChildIndex, switchRangeIndex, switchOrderIndex, touchStart, touchEnd, addArticle } = this
 
         const { articleList, currentIndex, currentChildIndexList, currentOrderIndex, currentRangeIndex, currentRankRangeIndex } = this.state
 
@@ -335,7 +356,7 @@ export default class ArticleList extends Component {
             <View style={{ flex: 1 }}>
                 <View style={{ flexDirection: "row", justifyContent: "space-evenly" }}>
                     {
-                        indexList.map((value, index) => <Pressable key={value.name} onPress={() => switchToIndex(index)}><Text style={{ textAlign: "center", lineHeight: 70 * o, fontSize: 24 * o, fontWeight: "900", color: currentIndex === index ? "#FD4C5C" : "black" }}>{value.name}</Text></Pressable>)
+                        indexList.map((value, index) => <Pressable key={value.name} onPress={() => switchToIndex(index)}><Text style={{ textAlign: "center", lineHeight: 70 * o, fontSize: 24 * o, fontWeight: "700", color: currentIndex === index ? "#FD4C5C" : "black" }}>{value.name}</Text></Pressable>)
                     }
                 </View>
                 <ScrollView style={{ height: 50 * o, flexGrow: 0 }} horizontal={true} showsHorizontalScrollIndicator={false} ref={topScroll}>
@@ -361,7 +382,7 @@ export default class ArticleList extends Component {
                             </Pressable>)
                     }
                 </ScrollView>
-                <GestureRecognizer style={{ flex: 1 }} onSwipeLeft={onSwipeLeft} onSwipeRight={onSwipeRight}>
+                {/* <GestureRecognizer style={{ flex: 1 }} onSwipeLeft={onSwipeLeft} onSwipeRight={onSwipeRight}>
                     <FlatList
                         style={{ flex: 1, paddingTop: 20 * o, backgroundColor: "white", zIndex: 1, elevation: 1 }}
                         data={articleList}
@@ -371,8 +392,23 @@ export default class ArticleList extends Component {
                         ref={listScroll}
                         onEndReachedThreshold={0.5}
                         onEndReached={addArticle}
+                        onTouchStart={e => console.log("Start", e.nativeEvent)}
+                        onTouchEnd={e => console.log("End", e.nativeEvent)}
+                        onTouchCancel={e => console.log("End", e.nativeEvent)}
                     />
-                </GestureRecognizer>
+                </GestureRecognizer> */}
+                <FlatList
+                    style={{ flex: 1, paddingTop: 20 * o, backgroundColor: "white", zIndex: 1, elevation: 1 }}
+                    data={articleList}
+                    renderItem={renderArticleFloor}
+                    keyExtractor={item => item.articleId}
+                    showsVerticalScrollIndicator={false}
+                    ref={listScroll}
+                    onEndReachedThreshold={0.5}
+                    onEndReached={addArticle}
+                    // onTouchStart={touchStart}
+                    // onTouchCancel={touchEnd}
+                />
             </View>
         )
     }

@@ -1,6 +1,7 @@
 import React from "react"
 import axios from "axios"
-import { View, Text, Pressable, Image } from "react-native"
+import { View, Text, Pressable, Image, Linking } from "react-native"
+import { Navigation } from "react-native-navigation"
 import Storage from "react-native-storage"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import { launchImageLibrary } from "react-native-image-picker"
@@ -526,13 +527,35 @@ export function commentToJSX(comment) {
                 const _ = comment.slice(index, start)
                 const articleId = _.match(/id=\d+\s/)[0].slice(3, -1)
                 const type = _.match(/type=\d+\s/)[0].slice(5, -1) * 1
-                console.log(articleId)
                 const str = _.slice(_.indexOf("]") + 1, _.lastIndexOf("["))
                 if (type === 2) {
                     res.JSXList.push(<Pressable key={index} onPress={() => Linking.openURL(`https://www.acfun.cn/v/ac${articleId}`)}><Text articleId={articleId} style={{ color: "blue" }}>{str}</Text></Pressable>)
-                } else {
-                    res.JSXList.push(<Text key={index} articleId={articleId} style={{ color: "blue" }}>{str}</Text>)
+                    return
                 }
+                if (type === 3) {
+                    res.JSXList.push(<Pressable key={index} onPress={e => {
+                        Navigation.push("HomeStack", {
+                            component: {
+                                name: "Article",
+                                passProps: {
+                                    articleId
+                                },
+                                options: {
+                                    topBar: {
+                                        title: {
+                                            color: "#FFFFFF",
+                                            text: `AC${articleId}`,
+                                            alignment: "center"
+                                        }
+                                    }
+                                }
+                            }
+                        })
+                    }}><Text articleId={articleId} style={{ color: "blue" }}>{str}</Text></Pressable>)
+                    return
+                }
+                res.JSXList.push(<Text key={index} articleId={articleId} style={{ color: "blue" }}>{str}</Text>)
+
             }
             if (tag === "img") {
                 start = start + comment.slice(start).indexOf("[/img]") + 6
@@ -547,10 +570,8 @@ export function commentToJSX(comment) {
                 res.JSXList.push(<View key={index}><Image source={{ uri: this.emotionList[emotionId] || `https://cdn.aixifan.com/dotnet/20130418/umeditor/dialogs/emotion/images/ac/${emotionId}.gif` }} style={{ width: 42 * this.o, height: 42 * this.o, top: 4 * this.o }} /></View>)
             }
             if (tag === "at") {
-                console.log(start, index)
                 start = start + comment.slice(start).indexOf("[/at]") + 5
                 const _ = comment.slice(index, start)
-                console.log(_)
                 const userId = _.match(/id=\d+[\s\]]/)[0]
                 const str = _.slice(_.indexOf("]") + 1, _.lastIndexOf("["))
                 res.JSXList.push(<Text key={index} userId={parseInt(userId)} style={{ color: "blue" }}>{str}</Text>)
@@ -713,8 +734,6 @@ export async function getImage() {
 export async function sendCommentToAcFun(content, articleId, replyToCommentId = "") {
 
     const { cookie } = await getLoginUserInfo()
-
-    console.log("这是获得图片的cookie", cookie)
 
     const res = await axios({
         url: "https://www.acfun.cn/rest/pc-direct/comment/add",

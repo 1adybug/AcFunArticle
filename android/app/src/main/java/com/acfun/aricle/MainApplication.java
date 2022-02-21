@@ -1,4 +1,4 @@
-package com.nav;
+package com.acfun.article;
 
 import android.app.Application;
 import android.content.Context;
